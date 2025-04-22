@@ -1,0 +1,21 @@
+[project]
+name = "linguaalayam"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Sachin Nandakumar",email = "zaksaiplayground@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "pandas (>=2.2.3,<3.0.0)",
+    "langchain (>=0.3.23,<0.4.0)",
+    "langchain-huggingface (>=0.1.2,<0.2.0)",
+    "sentence-transformers (>=4.1.0,<5.0.0)",
+    "protobuf (>=6.30.2,<7.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
