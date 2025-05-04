@@ -56,9 +56,9 @@ def scrape_definitions_from_word_url(playwright: Playwright, word_url_df):
     
     del temp_df
     print(f"Writing {all_words_per_alphabet_df.shape[0]} definitions to disk.")
-    all_words_per_alphabet_df.to_csv("all_words_per_alphabet_df.csv")
+    all_words_per_alphabet_df.to_csv("all_words_per_alphabet_df.csv", sep="\t")
     print(f"{no_definition_df.shape[0]} definitions not found. Saving urls to disk.")
-    no_definition_df.to_csv("no_definition_df.csv")
+    no_definition_df.to_csv("no_definition_df.csv", "\t")
 
 if __name__ == "__main__":
     word_url_dir = pathlib.Path(_DATA_DIR, _WORD_URL_DIR)
