@@ -2,14 +2,16 @@
 name = "linguaalayam"
 version = "0.1.0"
 description = ""
-authors = ["Sachin Nandakumar <sachin.nandakumar@deecoob.com>"]
+authors = ["Sachin Nandakumar <zaksaiplayground@gmail.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
 pandas = "^2.2.3"
 sentence-transformers = "^4.1.0"
 datasets = "^3.5.0"
+playwright = "^1.52.0"
 
 
 [build-system]
