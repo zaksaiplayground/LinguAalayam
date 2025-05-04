@@ -12,6 +12,8 @@ pandas = "^2.2.3"
 sentence-transformers = "^4.1.0"
 datasets = "^3.5.0"
 playwright = "^1.52.0"
+nest-asyncio = "^1.6.0"
+parsel = "^1.10.0"
 
 
 [build-system]
