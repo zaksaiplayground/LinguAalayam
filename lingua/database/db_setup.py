@@ -1,4 +1,3 @@
-# crud.py
 from sqlalchemy import create_engine
 from lingua.database.models import Base
 from dotenv import load_dotenv

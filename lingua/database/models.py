@@ -23,8 +23,8 @@ class WordDefinition(Base):
 
     word_uuid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     alphabet = Column(String(5), ForeignKey("alphabet_url.alphabet"))
-    word = Column(Text, nullable=False)
-    word_url = Column(Text)
+    word = Column(Text)
+    word_url = Column(Text, nullable=False)
     definitions = Column(ARRAY(Text))
     needs_review = Column(Boolean, default=False)
     is_deleted = Column(Boolean, default=False)
