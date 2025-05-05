@@ -1,8 +1,6 @@
-from playwright.async_api import async_playwright, Playwright, TimeoutError as PlaywrightTimeoutError
+from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 from parsel import Selector
 from urllib.parse import urljoin
-import pandas as pd
-import pathlib
 import asyncio
 from lingua.database.crud import upsert_alphabet, get_all_alphabets, add_word, soft_delete_alphabets
 from tqdm import tqdm
@@ -21,10 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://ml.wiktionary.org"
-# Number of parallel browser instances to use
 MAX_CONCURRENT_BROWSERS = 5
-# Number of words to process in each batch
-BATCH_SIZE = 100
 
 async def scrape_alphabet_url(playwright, website):
     browser = await playwright.chromium.launch(headless=True)

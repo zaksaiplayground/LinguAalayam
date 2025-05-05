@@ -1,10 +1,9 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from lingua.database.models import AlphabetURL, WordDefinition, Base
+from lingua.database.models import AlphabetURL, WordUrl, WordDefinition, Base
 from dotenv import load_dotenv
 import os
 import uuid
-import json
 
 load_dotenv()
 
@@ -52,7 +51,7 @@ def get_all_alphabets():
 
 def soft_delete_alphabets():
     """
-    Soft deletes alphabets (sets is_deleted to True) in AlphabetURL and WordDefinition if their count is less than 50.
+    Soft deletes alphabets (sets is_deleted to True) in AlphabetURL and WordURL if their count is less than 50.
     """
     session = Session()
     existing_alphabets = session.query(AlphabetURL).filter(AlphabetURL.is_deleted == False).all()
@@ -64,7 +63,7 @@ def soft_delete_alphabets():
         for alphabet in existing_alphabets:
             alphabet.is_deleted = True
         
-        # Soft delete related WordDefinition records
+        # Soft delete related WordURL records
         for alphabet in existing_alphabets:
             for word in alphabet.words:
                 word.is_deleted = True
@@ -74,17 +73,15 @@ def soft_delete_alphabets():
     else:
         print("✅ There are enough existing records, no need to delete.")
 
-# ---------- WORD CRUD ----------
+# ---------- WORD URL CRUD ----------
 
-def add_word(alphabet, word_url, word_text=None, definitions=None, needs_review=False):
+def add_word(alphabet, word_url, needs_review=False):
     session = Session()
     try:
-        word = WordDefinition(
+        word = WordUrl(
             word_uuid=uuid.uuid4(),
             alphabet=alphabet,
-            word=word_text,
             word_url=word_url,
-            definitions=json.dumps(definitions) if isinstance(definitions, list) else definitions,
             needs_review=needs_review
         )
         session.add(word)
@@ -99,21 +96,21 @@ def add_word(alphabet, word_url, word_text=None, definitions=None, needs_review=
 def get_words_by_alphabet(alphabet):
     session = Session()
     try:
-        return session.query(WordDefinition).filter_by(alphabet=alphabet).all()
+        return session.query(WordUrl).filter_by(alphabet=alphabet).all()
     finally:
         session.close()
 
 def get_words_without_definitions(limit=100):
     session = Session()
     try:
-        return session.query(WordDefinition).filter((WordDefinition.definitions == None) | (WordDefinition.definitions == [])).limit(limit).all()
+        return session.query(WordUrl).filter((WordUrl.definitions == None) | (WordUrl.definitions == [])).limit(limit).all()
     finally:
         session.close()
 
 def update_word_definitions(word_uuid, definitions):
     session = Session()
     try:
-        word = session.query(WordDefinition).filter_by(word_uuid=word_uuid).first()
+        word = session.query(WordUrl).filter_by(word_uuid=word_uuid).first()
         if word:
             word.definitions = definitions
             word.needs_review = False  # optionally set this
@@ -123,3 +120,45 @@ def update_word_definitions(word_uuid, definitions):
         raise e
     finally:
         session.close()
+
+
+def get_words_for_review():
+    session = Session()
+    try:
+        # Fetch all words with needs_review=True
+        return session.query(WordUrl).filter(WordUrl.needs_review == True).all()
+    except Exception as e:
+        print(f"Error fetching words for review: {e}")
+        session.rollback()
+        return []
+
+def update_word_needs_review(word_uuid):
+    session = Session()
+    try:
+        # Update the needs_review flag to False for the given word_uuid
+        word_url = session.query(WordUrl).filter_by(word_uuid=word_uuid).first()
+        if word_url:
+            word_url.needs_review = False
+            session.commit()
+    except Exception as e:
+        print(f"Error updating needs_review flag: {e}")
+        session.rollback()
+
+# ---------- WORD DEFINITIONS CRUD ----------
+
+
+def insert_word_definitions(word_uuid, definitions):
+    session = Session()
+    try:
+        # Insert definitions for the given word_uuid
+        for definition in definitions:
+            word_def = WordDefinition(
+                word_uuid=word_uuid,
+                definition=definition,
+                is_deleted=False  # Default to not deleted
+            )
+            session.add(word_def)
+        session.commit()
+    except Exception as e:
+        print(f"Error inserting word definitions: {e}")
+        session.rollback()
