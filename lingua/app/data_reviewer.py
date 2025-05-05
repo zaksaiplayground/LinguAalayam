@@ -2,38 +2,56 @@ import streamlit as st
 import pandas as pd
 import os
 
-# File paths
-INPUT_CSV = "data/no_definition_df.csv"
-REVIEWED_CSV = "data/reviewed_words.csv"
+# Directory and output file
+NO_DEF_DATA_DIR = "data/preprocessed/no_def"
+REVIEWED_CSV = "data/preprocessed/reviewed_words.csv"
 
-# Load CSV
-if os.path.exists(INPUT_CSV):
-    df = pd.read_csv(INPUT_CSV, sep="\t")
-else:
-    st.error("Input CSV not found.")
+# Get list of CSV files in the data directory (excluding reviewed file)
+csv_files = [f for f in os.listdir(NO_DEF_DATA_DIR)]
+csv_files.sort()
+
+if not csv_files:
+    st.success("🎉 No CSV files left to review!")
     st.stop()
 
-if df.empty:
-    st.success("🎉 All words reviewed!")
+# Track which file is currently being processed
+if "current_file_index" not in st.session_state:
+    st.session_state.current_file_index = 0
+
+current_file = os.path.join(NO_DEF_DATA_DIR, csv_files[st.session_state.current_file_index])
+
+# Load current CSV
+try:
+    df = pd.read_csv(current_file, sep="\t")
+except Exception as e:
+    st.error(f"Error reading {current_file}: {e}")
     st.stop()
 
-# Display the first word
+# Skip to next file if empty
+while df.empty:
+    st.session_state.current_file_index += 1
+    if st.session_state.current_file_index >= len(csv_files):
+        st.success("🎉 All words from all files reviewed!")
+        st.stop()
+    current_file = os.path.join(NO_DEF_DATA_DIR, csv_files[st.session_state.current_file_index])
+    df = pd.read_csv(current_file, sep="\t")
+
+# Display current word
 current_word = df.iloc[0]
 word = current_word["word"]
 url = current_word["url"]
 
 st.title("📘 Wiktionary Word Reviewer")
+st.markdown(f"**Source file:** `{os.path.basename(current_file)}`")
 st.markdown(f"### Word: **{word}**")
 st.markdown(f"[🔗 Open in new tab]({url})")
 
-# Layout: iframe left, input right
 left_col, right_col = st.columns([2, 1])
 
 with left_col:
     st.components.v1.iframe(url, height=750)
 
 with right_col:
-    # Use session_state to preserve and clear input
     if "definitions" not in st.session_state:
         st.session_state.definitions = ""
 
@@ -43,6 +61,11 @@ with right_col:
     submit = st.button("✅ Submit")
     skip = st.button("⏭️ Skip")
 
+    def advance_to_next():
+        df.drop(index=0).reset_index(drop=True).to_csv(current_file, sep="\t", index=False)
+        st.session_state.definitions = ""
+        st.rerun()
+
     if submit:
         if definitions.strip() == "":
             st.warning("Please enter at least one definition.")
@@ -50,8 +73,7 @@ with right_col:
 
         reviewed_rows = [
             {"word": word, "definition": d.strip()}
-            for d in definitions.strip().splitlines()
-            if d.strip()
+            for d in definitions.strip().splitlines() if d.strip()
         ]
 
         reviewed_df = pd.DataFrame(reviewed_rows)
@@ -60,15 +82,7 @@ with right_col:
         else:
             reviewed_df.to_csv(REVIEWED_CSV, index=False, sep="\t")
 
-        df = df.drop(index=0).reset_index(drop=True)
-        df.to_csv(INPUT_CSV, index=False, sep="\t")
-
-        st.session_state.definitions = ""  # clear before rerun
-        st.rerun()
+        advance_to_next()
 
     if skip:
-        df = df.drop(index=0).reset_index(drop=True)
-        df.to_csv(INPUT_CSV, index=False, sep="\t")
-
-        st.session_state.definitions = ""  # clear before rerun
-        st.rerun()
+        advance_to_next()

@@ -3,8 +3,10 @@ from parsel import Selector
 from urllib.parse import urlparse, unquote
 import pandas as pd
 import pathlib
+from tqdm import tqdm
 
-_DATA_DIR = pathlib.Path("data/raw/")
+_DATA_DIR = pathlib.Path("data/raw/wiktionary/")
+_OUTPUT_DIR = pathlib.Path("data/preprocessed/")
 _WORD_URL_DIR = "word_urls"
 
 
@@ -50,26 +52,34 @@ def scrape_definitions_from_word_url(playwright: Playwright, word_url_df):
             temp_df = pd.DataFrame({"word": [word]*len(definitions), "definitions": definitions})
             all_words_per_alphabet_df = pd.concat([all_words_per_alphabet_df, temp_df])
         else:
-            print(f"NO DEF FOUND FOR WORD: {word} and URL: {url}")
+            # in case definition not found, keep aside for manual checks
+            # print(f"NO DEF FOUND FOR WORD: {word} and URL: {url}")
             temp_df = pd.DataFrame({"word": [word], "url": [url]})
             no_definition_df = pd.concat([no_definition_df, temp_df])
     
     del temp_df
-    print(f"Writing {all_words_per_alphabet_df.shape[0]} definitions to disk.")
-    all_words_per_alphabet_df.to_csv("all_words_per_alphabet_df.csv", sep="\t")
-    print(f"{no_definition_df.shape[0]} definitions not found. Saving urls to disk.")
-    no_definition_df.to_csv("no_definition_df.csv", "\t")
+    return all_words_per_alphabet_df, no_definition_df
+    
 
 if __name__ == "__main__":
     word_url_dir = pathlib.Path(_DATA_DIR, _WORD_URL_DIR)
     is_empty = not any(word_url_dir.iterdir())
+
+    _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    pathlib.Path(_OUTPUT_DIR, "no_def").mkdir(parents=True, exist_ok=True)
 
     if is_empty:
         print("Word URLs required to run this script. Run url_scrapper.py first.")
         exit(1)
     
     with sync_playwright() as playwright:
-        for word_urls in word_url_dir.iterdir():
-            word_url_df = pd.read_csv(word_urls)
-            scrape_definitions_from_word_url(playwright, word_url_df)
-            break
+        for word_urls in tqdm(word_url_dir.iterdir()):
+            if not pathlib.Path(_OUTPUT_DIR, word_urls.name).exists():
+                word_url_df = pd.read_csv(word_urls)
+                def_df, no_def_df = scrape_definitions_from_word_url(playwright, word_url_df)
+                print(f"Writing {def_df.shape[0]} definitions to disk.")
+                def_df.to_csv(pathlib.Path(_OUTPUT_DIR, word_urls.name), sep="\t")
+                print(f"{no_def_df.shape[0]} definitions not found. Saving urls to disk.")
+                no_def_df.to_csv(pathlib.Path(_OUTPUT_DIR, "no_def", word_urls.name), sep="\t")
+            else:
+                print(f"File {word_urls.name} exists in {_OUTPUT_DIR}. Skipping extraction...")
