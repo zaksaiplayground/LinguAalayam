@@ -23,3 +23,9 @@ alembic = "^1.15.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+build-db = "lingua.database.db_setup:init_db"
+url-scrapper = "lingua.data.url_scrapper:main"
+extract-wiktionary-data = "lingua.data.wiktionary_train_data_extractor:main"
