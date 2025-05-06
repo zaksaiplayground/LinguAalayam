@@ -15,7 +15,7 @@ class AlphabetURL(Base):
     url = Column(Text)
     is_deleted = Column(Boolean, default=False)
 
-    words = relationship("WordURL", back_populates="alphabet_rel")
+    words = relationship("WordUrl", back_populates="alphabet_rel")
 
 
 class WordUrl(Base):
@@ -39,5 +39,5 @@ class WordDefinition(Base):
     definition = Column(Text, nullable=False)
     is_deleted = Column(Boolean, default=False)
 
-    word_rel = relationship("WordURL", back_populates="definitions")
+    word_rel = relationship("WordUrl", back_populates="definitions")
 

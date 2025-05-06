@@ -51,7 +51,7 @@ def get_all_alphabets():
 
 def soft_delete_alphabets():
     """
-    Soft deletes alphabets (sets is_deleted to True) in AlphabetURL and WordURL if their count is less than 50.
+    Soft deletes alphabets (sets is_deleted to True) in AlphabetURL and WordUrl if their count is less than 50.
     """
     session = Session()
     existing_alphabets = session.query(AlphabetURL).filter(AlphabetURL.is_deleted == False).all()
@@ -63,7 +63,7 @@ def soft_delete_alphabets():
         for alphabet in existing_alphabets:
             alphabet.is_deleted = True
         
-        # Soft delete related WordURL records
+        # Soft delete related WordUrl records
         for alphabet in existing_alphabets:
             for word in alphabet.words:
                 word.is_deleted = True
@@ -75,7 +75,7 @@ def soft_delete_alphabets():
 
 # ---------- WORD URL CRUD ----------
 
-def add_word(alphabet, word_url, needs_review=False):
+def add_word(alphabet, word_url, needs_review=True):
     session = Session()
     try:
         word = WordUrl(
