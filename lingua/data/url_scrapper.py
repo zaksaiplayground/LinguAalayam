@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://ml.wiktionary.org"
 MAX_CONCURRENT_BROWSERS = 5
+_ALPHABET_RESCRAPPING_LIST = [] # incase scrapping fails for some alphabets
 
 async def scrape_alphabet_url(playwright, website):
     browser = await playwright.chromium.launch(headless=True)
@@ -177,7 +178,12 @@ async def main_async():
             logger.info("✅ Alphabet URLs already in DB. Skipping scraping.")
 
         ml_records = get_all_alphabets()
-        
+
+        if _ALPHABET_RESCRAPPING_LIST:
+            logger.warning(f"Proceeding with the scrapping of only the following alphabets: {_ALPHABET_RESCRAPPING_LIST}")
+            logger.warning("Possibility of duplicate entries for these alphabets. Kindly take care of them manually.")
+            ml_records=[record for record in ml_records if record.url.split("/")[-1] in _ALPHABET_RESCRAPPING_LIST]
+
         if ml_records:
             await scrape_word_url_per_alphabet(playwright, ml_records)
 

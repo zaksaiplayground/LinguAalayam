@@ -162,3 +162,10 @@ def insert_word_definitions(word_uuid, definitions):
     except Exception as e:
         print(f"Error inserting word definitions: {e}")
         session.rollback()
+
+
+def remove_duplicates_from_word_url():
+    pass
+
+def remove_duplicates_from_word_definitions():
+    pass
