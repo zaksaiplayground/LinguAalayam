@@ -1,88 +1,100 @@
 import streamlit as st
-import pandas as pd
-import os
+from lingua.database.crud import get_words_for_review, insert_word_definitions, update_word_needs_review
+from urllib.parse import unquote
 
-# Directory and output file
-NO_DEF_DATA_DIR = "data/preprocessed/no_def"
-REVIEWED_CSV = "data/preprocessed/reviewed_words.csv"
-
-# Get list of CSV files in the data directory (excluding reviewed file)
-csv_files = [f for f in os.listdir(NO_DEF_DATA_DIR)]
-csv_files.sort()
-
-if not csv_files:
-    st.success("🎉 No CSV files left to review!")
-    st.stop()
-
-# Track which file is currently being processed
-if "current_file_index" not in st.session_state:
-    st.session_state.current_file_index = 0
-
-current_file = os.path.join(NO_DEF_DATA_DIR, csv_files[st.session_state.current_file_index])
-
-# Load current CSV
-try:
-    df = pd.read_csv(current_file, sep="\t")
-except Exception as e:
-    st.error(f"Error reading {current_file}: {e}")
-    st.stop()
-
-# Skip to next file if empty
-while df.empty:
-    st.session_state.current_file_index += 1
-    if st.session_state.current_file_index >= len(csv_files):
-        st.success("🎉 All words from all files reviewed!")
-        st.stop()
-    current_file = os.path.join(NO_DEF_DATA_DIR, csv_files[st.session_state.current_file_index])
-    df = pd.read_csv(current_file, sep="\t")
-
-# Display current word
-current_word = df.iloc[0]
-word = current_word["word"]
-url = current_word["url"]
-
-st.title("📘 Wiktionary Word Reviewer")
-st.markdown(f"**Source file:** `{os.path.basename(current_file)}`")
-st.markdown(f"### Word: **{word}**")
-st.markdown(f"[🔗 Open in new tab]({url})")
-
-left_col, right_col = st.columns([2, 1])
-
-with left_col:
-    st.components.v1.iframe(url, height=750)
-
-with right_col:
+def _initialize_session_state():
+    """Initialize session state variables if they don't exist."""
+    if "current_index" not in st.session_state:
+        st.session_state.current_index = 0
     if "definitions" not in st.session_state:
         st.session_state.definitions = ""
 
-    definitions = st.text_area("Definitions", value=st.session_state.definitions,
-                               height=300, label_visibility="collapsed")
+def _get_current_word(words):
+    """Get the current word based on the session state index."""
+    if st.session_state.current_index >= len(words):
+        return None
+    
+    word_for_review = words[st.session_state.current_index]
+    word_url = word_for_review.word_url
+    word_uuid = word_for_review.word_uuid
+    word_text = unquote(word_url.split("/")[-1])
+    
+    return {
+        "word_for_review": word_for_review,
+        "word_url": word_url,
+        "word_uuid": word_uuid,
+        "word_text": word_text
+    }
 
-    submit = st.button("✅ Submit")
-    skip = st.button("⏭️ Skip")
+def _display_word_content(word_data):
+    """Display the word content in the UI."""
+    st.title("📘 Wiktionary Word Reviewer")
+    
+    left_col, right_col = st.columns([2, 1])
+    
+    with left_col:
+        st.components.v1.iframe(word_data["word_url"], height=750)
+    
+    return right_col
 
-    def advance_to_next():
-        df.drop(index=0).reset_index(drop=True).to_csv(current_file, sep="\t", index=False)
-        st.session_state.definitions = ""
-        st.rerun()
+def _display_definition_input(container):
+    """Display the definition input area."""
+    definitions = container.text_area(
+        "Definitions",
+        value=st.session_state.definitions,
+        height=300,
+        label_visibility="collapsed"
+    )
+    
+    submit = container.button("✅ Submit")
+    skip = container.button("⏭️ Skip")
+    
+    return definitions, submit, skip
 
-    if submit:
-        if definitions.strip() == "":
-            st.warning("Please enter at least one definition.")
-            st.stop()
+def _handle_submit(definitions, word_data):
+    """Handle the submission of definitions."""
+    if definitions.strip() == "":
+        st.warning("Please enter at least one definition.")
+        return False
+    
+    definitions_list = [d.strip() for d in definitions.strip().splitlines() if d.strip()]
+    
+    insert_word_definitions(word_data["word_uuid"], definitions_list, word_text=word_data["word_text"])
+    update_word_needs_review(word_data["word_uuid"])
+    
+    st.session_state.current_index += 1
+    st.session_state.definitions = ""
+    return True
 
-        reviewed_rows = [
-            {"word": word, "definition": d.strip()}
-            for d in definitions.strip().splitlines() if d.strip()
-        ]
+def _handle_skip(word_data):
+    """Handle skipping the current word."""
+    update_word_needs_review(word_data["word_uuid"])
+    st.session_state.current_index += 1
+    return True
 
-        reviewed_df = pd.DataFrame(reviewed_rows)
-        if os.path.exists(REVIEWED_CSV):
-            reviewed_df.to_csv(REVIEWED_CSV, mode='a', index=False, header=False, sep="\t")
-        else:
-            reviewed_df.to_csv(REVIEWED_CSV, index=False, sep="\t")
+def main():
+    """Main application function."""
+    _initialize_session_state()
+    
+    # Get words for review
+    words_for_review = get_words_for_review()
+    
+    current_word_data = _get_current_word(words_for_review)
+    if current_word_data is None:
+        st.success("🎉 All words reviewed!")
+        return
+    
+    right_column = _display_word_content(current_word_data)
+    
+    definitions, submit_button, skip_button = _display_definition_input(right_column)
+    
+    if submit_button:
+        if _handle_submit(definitions, current_word_data):
+            st.rerun()
+    
+    if skip_button:
+        if _handle_skip(current_word_data):
+            st.rerun()
 
-        advance_to_next()
-
-    if skip:
-        advance_to_next()
+if __name__ == "__main__":
+    main()
