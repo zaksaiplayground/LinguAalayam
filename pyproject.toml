@@ -17,6 +17,8 @@ streamlit = "^1.45.0"
 sqlalchemy = "^2.0.40"
 python-dotenv = "^1.1.0"
 psycopg2-binary = "^2.9.10"
+psycopg = "^3.2.7"  # for alembic
+alembic = "^1.15.2"
 
 
 [build-system]
