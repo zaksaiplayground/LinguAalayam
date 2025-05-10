@@ -109,7 +109,7 @@ def scrape_definitions_from_db(playwright: Playwright):
                     logger.info(f"Found {len(definitions)} definitions for '{word}'")
                     
                     # Insert scraped definitions into word_definition table
-                    insert_word_definitions(word_uuid, definitions)
+                    insert_word_definitions(word_uuid, definitions, word_text=word)
                     
                     # Update needs_review to False
                     update_word_needs_review(word_uuid)
