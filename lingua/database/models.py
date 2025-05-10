@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import (
-    create_engine, Column, String, Text, Boolean, ForeignKey
+    Column, String, Text, Boolean, ForeignKey
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
@@ -38,7 +38,6 @@ class WordDefinition(Base):
     word_uuid = Column(UUID(as_uuid=True), ForeignKey("word_url.word_uuid"), nullable=False)
     definition = Column(Text, nullable=False)
     is_deleted = Column(Boolean, default=False)
-    word = Column(Text, nullable=True)
+    word = Column(Text, nullable=False)
 
     word_rel = relationship("WordUrl", back_populates="definitions")
-

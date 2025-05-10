@@ -147,7 +147,7 @@ def update_word_needs_review(word_uuid):
 # ---------- WORD DEFINITIONS CRUD ----------
 
 
-def insert_word_definitions(word_uuid, definitions):
+def insert_word_definitions(word_uuid, definitions, word_text):
     session = Session()
     try:
         # Insert definitions for the given word_uuid
@@ -155,6 +155,7 @@ def insert_word_definitions(word_uuid, definitions):
             word_def = WordDefinition(
                 word_uuid=word_uuid,
                 definition=definition,
+                word=word_text,
                 is_deleted=False  # Default to not deleted
             )
             session.add(word_def)
@@ -162,10 +163,3 @@ def insert_word_definitions(word_uuid, definitions):
     except Exception as e:
         print(f"Error inserting word definitions: {e}")
         session.rollback()
-
-
-def remove_duplicates_from_word_url():
-    pass
-
-def remove_duplicates_from_word_definitions():
-    pass
