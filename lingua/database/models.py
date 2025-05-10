@@ -38,6 +38,7 @@ class WordDefinition(Base):
     word_uuid = Column(UUID(as_uuid=True), ForeignKey("word_url.word_uuid"), nullable=False)
     definition = Column(Text, nullable=False)
     is_deleted = Column(Boolean, default=False)
+    word = Column(Text, nullable=True)
 
     word_rel = relationship("WordUrl", back_populates="definitions")
 
