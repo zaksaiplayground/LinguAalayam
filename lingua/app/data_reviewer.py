@@ -78,6 +78,8 @@ def main():
     
     # Get words for review
     words_for_review = get_words_for_review()
+
+    st.info(f"Number of words to review: {len(words_for_review)}")
     
     current_word_data = _get_current_word(words_for_review)
     if current_word_data is None:

@@ -4,6 +4,7 @@ from lingua.database.models import AlphabetURL, WordUrl, WordDefinition, Base
 from dotenv import load_dotenv
 import os
 import uuid
+import pandas as pd
 
 load_dotenv()
 
@@ -107,6 +108,17 @@ def get_words_without_definitions(limit=100):
     finally:
         session.close()
 
+
+def get_words_for_review():
+    session = Session()
+    try:
+        # Fetch all words with needs_review=True
+        return session.query(WordUrl).filter(WordUrl.needs_review == True).all()
+    except Exception as e:
+        print(f"Error fetching words for review: {e}")
+        session.rollback()
+        return []
+
 def update_word_definitions(word_uuid, definitions):
     session = Session()
     try:
@@ -120,17 +132,6 @@ def update_word_definitions(word_uuid, definitions):
         raise e
     finally:
         session.close()
-
-
-def get_words_for_review():
-    session = Session()
-    try:
-        # Fetch all words with needs_review=True
-        return session.query(WordUrl).filter(WordUrl.needs_review == True).all()
-    except Exception as e:
-        print(f"Error fetching words for review: {e}")
-        session.rollback()
-        return []
 
 def update_word_needs_review(word_uuid):
     session = Session()
@@ -163,3 +164,25 @@ def insert_word_definitions(word_uuid, definitions, word_text):
     except Exception as e:
         print(f"Error inserting word definitions: {e}")
         session.rollback()
+
+
+def get_all_word_definitions():
+    session = Session()
+    try:
+        # Fetch all words with needs_review=True
+        return session.query(WordDefinition).all()
+    except Exception as e:
+        print(f"Error fetching words for review: {e}")
+        session.rollback()
+        return []
+
+    
+def get_all_word_definitions_as_dataframe():
+    session = Session()
+    try:
+        query = session.query(WordDefinition.word, WordDefinition.definition)
+        return pd.read_sql(query.statement, session.bind)
+    except Exception as e:
+        print(f"Error fetching words for review: {e}")
+        session.rollback()
+        return pd.DataFrame()
